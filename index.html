@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BUBT CSE Portal — Fee Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0f;
+    --surface: #0d1b2a;
+    --surface2: #112236;
+    --accent: #00d4ff;
+    --accent2: #7b2fff;
+    --accent3: #00ff94;
+    --text: #e8f4f8;
+    --text-muted: #7a9db5;
+    --border: rgba(0,212,255,0.15);
+    --glow: rgba(0,212,255,0.08);
+    --error: #ff4d6d;
+    --warn: #ffb703;
+    --success: #00ff94;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── CANVAS BG ── */
+  #bg-canvas {
+    position: fixed; inset: 0;
+    z-index: 0; pointer-events: none;
+  }
+
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem;
+    height: 64px;
+    background: rgba(5,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-brand {
+    display: flex; align-items: center; gap: 12px;
+    text-decoration: none;
+  }
+
+  .nav-logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 700; font-size: 14px;
+    color: #fff; letter-spacing: -1px;
+  }
+
+  .nav-title {
+    font-family: var(--sans); font-weight: 800; font-size: 1rem;
+    color: var(--text); letter-spacing: 0.5px;
+  }
+
+  .nav-title span { color: var(--accent); }
+
+  .nav-links { display: flex; gap: 0; }
+
+  .nav-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 20px; height: 64px;
+    text-decoration: none;
+    font-family: var(--mono); font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 1px; text-transform: uppercase;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .nav-link:hover { color: var(--accent); }
+
+  .nav-link.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .nav-link svg { width: 16px; height: 16px; }
+
+  /* ── MAIN ── */
+  main {
+    position: relative; z-index: 1;
+    padding: 96px 2rem 2rem;
+    max-width: 960px; margin: 0 auto;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    margin-bottom: 3rem;
+    animation: fadeSlideDown 0.6s ease both;
+  }
+
+  .page-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 1rem;
+    opacity: 0.8;
+  }
+
+  .page-tag::before {
+    content: ''; width: 20px; height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--sans); font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.1; letter-spacing: -1px;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .page-desc {
+    color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;
+    max-width: 520px;
+    font-family: var(--mono);
+  }
+
+  /* ── FORMULA INFO ── */
+  .formula-bar {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 2rem;
+    animation: fadeSlideDown 0.6s 0.1s ease both;
+  }
+
+  .formula-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--surface);
+  }
+
+  .formula-chip .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent3);
+  }
+
+  /* ── CALCULATOR CARD ── */
+  .calc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    animation: fadeSlideUp 0.6s 0.2s ease both;
+    position: relative; overflow: hidden;
+  }
+
+  .calc-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .calc-card-title {
+    font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── FORM GRID ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem; margin-bottom: 1.5rem;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-family: var(--mono); font-size: 0.68rem;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  input[type="number"], select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--mono); font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+  }
+
+  select option { background: var(--surface); }
+
+  /* ── SEMESTER TABLE ── */
+  .semester-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .semester-label {
+    font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 0.75rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .semesters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .sem-item {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+
+  .sem-item:hover { border-color: var(--accent); background: var(--glow); }
+
+  .sem-item.selected {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.08);
+  }
+
+  .sem-item input[type="checkbox"] {
+    position: absolute; opacity: 0; width: 0; height: 0;
+  }
+
+  .sem-item-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .sem-name {
+    font-family: var(--mono); font-size: 0.75rem;
+    color: var(--text); font-weight: 700;
+  }
+
+  .sem-check {
+    width: 16px; height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .sem-item.selected .sem-check {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .sem-check svg { display: none; }
+  .sem-item.selected .sem-check svg { display: block; }
+
+  .sem-credit {
+    font-family: var(--mono); font-size: 0.65rem;
+    color: var(--text-muted);
+  }
+
+  /* Inline editable credit field inside sem-item */
+  .sem-credit-wrap {
+    display: flex; align-items: center; gap: 5px;
+    margin: 3px 0;
+  }
+
+  .sem-credit-input {
+    width: 46px;
+    background: rgba(0,0,0,0.25);
+    border: 1px dashed rgba(0,212,255,0.2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--accent);
+    font-family: var(--mono); font-size: 0.7rem;
+    outline: none; text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .sem-credit-input:focus {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.06);
+  }
+
+  .sem-credit-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .sem-credit-label {
+    font-family: var(--mono); font-size: 0.62rem;
+    color: var(--text-muted);
+  }
+
+  .sem-status {
+    display: inline-block;
+    font-family: var(--mono); font-size: 0.6rem;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 4px;
+    margin-top: 4px;
+  }
+
+  .sem-status.finished {
+    background: rgba(0,255,148,0.1);
+    color: var(--accent3);
+  }
+
+  .sem-status.upcoming {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+  }
+
+  /* ── PER-SEMESTER WAIVER ROW ── */
+  .sem-waiver-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid rgba(0,212,255,0.08);
+  }
+
+  .sem-waiver-select {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,212,255,0.12);
+    border-radius: 5px;
+    padding: 4px 6px;
+    color: var(--accent2);
+    font-family: var(--mono); font-size: 0.62rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    width: 100%;
+  }
+
+  .sem-waiver-select:focus { border-color: var(--accent2); }
+  .sem-waiver-select option { background: #0d1b2a; }
+
+  .sem-custom-pct {
+    width: 48px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(123,47,255,0.25);
+    border-radius: 5px;
+    padding: 4px 6px;
+    color: var(--accent2);
+    font-family: var(--mono); font-size: 0.62rem;
+    outline: none;
+    transition: border-color 0.2s;
+    text-align: center;
+    display: none;
+  }
+
+  .sem-custom-pct.visible { display: block; }
+  .sem-custom-pct:focus { border-color: var(--accent2); }
+  .sem-custom-pct::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .sem-waiver-badge {
+    font-family: var(--mono); font-size: 0.58rem;
+    letter-spacing: 0.5px;
+    color: #c59fff;
+    white-space: nowrap;
+  }
+
+  /* ── CALCULATE BTN ── */
+  .btn-calc {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px;
+    color: #fff; font-family: var(--mono); font-size: 0.85rem;
+    font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+
+  .btn-calc:hover {
+    opacity: 0.9; transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0,212,255,0.25);
+  }
+
+  .btn-calc:active { transform: translateY(0); }
+
+  /* ── RESULTS ── */
+  #results {
+    display: none;
+    animation: fadeSlideUp 0.5s ease both;
+  }
+
+  #results.show { display: block; }
+
+  .result-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .result-title {
+    font-family: var(--sans); font-weight: 800; font-size: 1.4rem;
+  }
+
+  .result-title span { color: var(--accent); }
+
+  .result-waiver-badge {
+    font-family: var(--mono); font-size: 0.7rem;
+    padding: 6px 14px; border-radius: 100px;
+    background: rgba(123,47,255,0.15);
+    border: 1px solid rgba(123,47,255,0.3);
+    color: #c59fff;
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem; margin-bottom: 1.5rem;
+  }
+
+  .result-stat {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    position: relative;
+  }
+
+  .result-stat.highlight {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .stat-label {
+    font-family: var(--mono); font-size: 0.65rem;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-family: var(--mono); font-weight: 700;
+    font-size: 1.4rem; color: var(--text);
+  }
+
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.saved { color: var(--accent3); }
+  .stat-value.warn { color: var(--warn); }
+
+  .stat-sub {
+    font-family: var(--mono); font-size: 0.65rem;
+    color: var(--text-muted); margin-top: 2px;
+  }
+
+  /* ── SEM BREAKDOWN TABLE ── */
+  .breakdown-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .breakdown-header {
+    padding: 1rem 1.25rem;
+    background: var(--surface2);
+    font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .breakdown-table {
+    width: 100%; border-collapse: collapse;
+  }
+
+  .breakdown-table th {
+    padding: 10px 16px;
+    font-family: var(--mono); font-size: 0.65rem;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .breakdown-table td {
+    padding: 12px 16px;
+    font-family: var(--mono); font-size: 0.8rem;
+    color: var(--text);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .breakdown-table tr:last-child td { border-bottom: none; }
+
+  .breakdown-table tr:hover td { background: var(--glow); }
+
+  .breakdown-table .total-row td {
+    color: var(--accent);
+    font-weight: 700;
+    border-top: 1px solid var(--border);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .td-sem { color: var(--text); }
+  .td-credit { color: var(--text-muted); }
+  .td-tuition { color: var(--text); }
+  .td-semfee { color: var(--text-muted); }
+  .td-total { color: var(--warn); }
+  .td-waiver { color: var(--accent3); }
+  .td-payable { color: var(--accent); font-weight: 700; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    margin-top: 4rem;
+  }
+
+  .footer-inner {
+    max-width: 960px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+
+  .footer-top {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+
+  .footer-brand {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .footer-logo {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    color: #fff;
+  }
+
+  .footer-name {
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+  }
+
+  .footer-name span { color: var(--accent); }
+
+  .footer-links {
+    display: flex; gap: 1.5rem;
+  }
+
+  .footer-link {
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--text-muted); text-decoration: none;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+  }
+
+  .footer-link:hover { color: var(--accent); }
+
+  .footer-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .footer-copy {
+    font-family: var(--mono); font-size: 0.65rem;
+    color: var(--text-muted);
+  }
+
+  .footer-copy span { color: var(--accent3); }
+
+  .footer-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 0.65rem;
+    color: var(--text-muted);
+  }
+
+  .footer-badge .pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent3);
+    animation: pulse 2s ease infinite;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  @keyframes scanline {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(100vh); }
+  }
+
+  .scanline {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 2px; z-index: 200; pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.06), transparent);
+    animation: scanline 6s linear infinite;
+  }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    nav { padding: 0 1rem; }
+    main { padding: 80px 1rem 2rem; }
+    .nav-link span { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+    .semesters-grid { grid-template-columns: repeat(2, 1fr); }
+    .results-grid { grid-template-columns: 1fr 1fr; }
+    .breakdown-table th:nth-child(3),
+    .breakdown-table td:nth-child(3),
+    .breakdown-table th:nth-child(4),
+    .breakdown-table td:nth-child(4) { display: none; }
+  }
+
+  /* number input arrows hidden */
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+<canvas id="bg-canvas"></canvas>
+
+<!-- NAVBAR -->
+<nav>
+  <a href="index.html" class="nav-brand">
+    <div class="nav-logo">CSE</div>
+    <span class="nav-title">BUBT <span>Portal</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      </svg>
+      <span>Fee Calculator</span>
+    </a>
+    <a href="grades.html" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+      </svg>
+      <span>Grade Calculator</span>
+    </a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main>
+  <div class="page-header">
+    <div class="page-tag">BUBT · B.Sc Engg. CSE</div>
+    <h1>Semester <em>Fee</em><br>Calculator</h1>
+    <p class="page-desc">Calculate your exact fees for any semester with waiver discounts applied. Based on BUBT 2025–2026 fee structure.</p>
+  </div>
+
+  <div class="formula-bar">
+    <div class="formula-chip"><div class="dot"></div>৳3,350 per credit (tuition)</div>
+    <div class="formula-chip"><div class="dot"></div>৳9,850 semester fee</div>
+    <div class="formula-chip"><div class="dot"></div>Waiver on tuition only</div>
+    <div class="formula-chip"><div class="dot"></div>12 semesters total</div>
+  </div>
+
+  <!-- INPUT CARD -->
+  <div class="calc-card">
+    <div class="calc-card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Configuration
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Default Waiver for All Semesters</label>
+        <select id="waiver-global" onchange="applyGlobalWaiver()">
+          <option value="0">No Waiver (0%)</option>
+          <option value="0.2">20% Waiver</option>
+          <option value="0.25">25% Waiver</option>
+          <option value="0.5">50% Waiver</option>
+          <option value="0.75">75% Waiver</option>
+          <option value="1">Full Waiver (100%)</option>
+          <option value="custom">Custom %</option>
+        </select>
+      </div>
+      <div class="form-group" id="global-custom-wrap" style="display:none">
+        <label>Custom Waiver % (applied to all)</label>
+        <input type="number" id="waiver-global-custom" placeholder="e.g. 35" min="0" max="100" step="0.5" oninput="applyGlobalWaiver()">
+      </div>
+    </div>
+    <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Click any credit value to edit it · Override waiver per semester individually below
+    </div>
+
+    <div class="semester-section">
+      <div class="semester-label">
+        <span>Select Semesters</span>
+        <span id="selected-count" style="color:var(--accent);font-family:var(--mono);font-size:0.7rem;">0 selected</span>
+      </div>
+      <div class="semesters-grid" id="semesters-grid">
+        <!-- injected by JS -->
+      </div>
+    </div>
+
+    <button class="btn-calc" onclick="calculate()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      CALCULATE FEES
+    </button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="calc-card">
+      <div class="result-header">
+        <div class="result-title">Your Fee <span>Summary</span></div>
+        <div class="result-waiver-badge" id="waiver-label">No Waiver Applied</div>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-stat highlight">
+          <div class="stat-label">Total Payable</div>
+          <div class="stat-value accent" id="res-payable">৳0</div>
+          <div class="stat-sub" id="res-sems-count">0 semesters</div>
+        </div>
+        <div class="result-stat">
+          <div class="stat-label">Gross Total</div>
+          <div class="stat-value warn" id="res-gross">৳0</div>
+          <div class="stat-sub">before waiver</div>
+        </div>
+        <div class="result-stat">
+          <div class="stat-label">Total Saved</div>
+          <div class="stat-value saved" id="res-saved">৳0</div>
+          <div class="stat-sub">waiver discount</div>
+        </div>
+        <div class="result-stat">
+          <div class="stat-label">Total Credits</div>
+          <div class="stat-value" id="res-credits">0</div>
+          <div class="stat-sub">credit hours</div>
+        </div>
+      </div>
+
+      <div class="breakdown-card">
+        <div class="breakdown-header">
+          <span>Semester Breakdown</span>
+          <span id="breakdown-sem-total" style="color:var(--text-muted)">—</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Semester</th>
+                <th>Credits</th>
+                <th>Tuition</th>
+                <th>Sem Fee</th>
+                <th>Gross</th>
+                <th>Waiver</th>
+                <th>Payable</th>
+              </tr>
+            </thead>
+            <tbody id="breakdown-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">CSE</div>
+        <div class="footer-name">BUBT <span>Portal</span></div>
+      </div>
+      <div class="footer-links">
+        <a href="index.html" class="footer-link">Fee Calc</a>
+        <a href="grades.html" class="footer-link">Grades</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">
+        © 2026 All rights reserved. | Developed by <a href="https://github.com/makhzumbinharun" target="_blank" rel="noopener" style="color:var(--accent3);text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">makhzumbinharun</a>
+      </div>
+      <div class="footer-badge">
+        <div class="pulse"></div>
+        Bangladesh University of Business &amp; Technology
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── DATA ──
+const TUITION_PER_CREDIT = 3350;
+const SEMESTER_FEE_FIRST = 14080;
+const SEMESTER_FEE = 9850;
+
+const SEMESTERS = [
+  { num: '01', name: "Fall'25",   credit: 19,    semFeeFirst: true,  status: 'finished' },
+  { num: '02', name: "Spring'26", credit: 15,    semFeeFirst: false, status: 'finished' },
+  { num: '03', name: "Summer'26", credit: 15.75, semFeeFirst: false, status: 'upcoming' },
+  { num: '04', name: "Fall'26",   credit: 12,    semFeeFirst: false, status: 'upcoming' },
+  { num: '05', name: "Spring'27", credit: 14.25, semFeeFirst: false, status: 'upcoming' },
+  { num: '06', name: "Summer'27", credit: 12,    semFeeFirst: false, status: 'upcoming' },
+  { num: '07', name: "Fall'27",   credit: 12.75, semFeeFirst: false, status: 'upcoming' },
+  { num: '08', name: "Spring'28", credit: 13.5,  semFeeFirst: false, status: 'upcoming' },
+  { num: '09', name: "Summer'28", credit: 14.25, semFeeFirst: false, status: 'upcoming' },
+  { num: '10', name: "Fall'28",   credit: 13.5,  semFeeFirst: false, status: 'upcoming' },
+  { num: '11', name: "Spring'29", credit: 6,     semFeeFirst: false, status: 'upcoming' },
+  { num: '12', name: "Summer'29", credit: 6,     semFeeFirst: false, status: 'upcoming' },
+];
+
+const WAIVER_OPTIONS = [
+  { val: '0',      label: 'No Waiver' },
+  { val: '0.2',    label: '20%' },
+  { val: '0.25',   label: '25%' },
+  { val: '0.5',    label: '50%' },
+  { val: '0.75',   label: '75%' },
+  { val: '1',      label: '100%' },
+  { val: 'custom', label: 'Custom…' },
+];
+
+// Build semester cards
+const grid = document.getElementById('semesters-grid');
+SEMESTERS.forEach((s, i) => {
+  const item = document.createElement('label');
+  item.className = 'sem-item' + (s.status === 'finished' ? ' selected' : '');
+  item.dataset.idx = i;
+
+  const optionsHtml = WAIVER_OPTIONS.map(o =>
+    `<option value="${o.val}">${o.label}</option>`
+  ).join('');
+
+  item.innerHTML = `
+    <input type="checkbox" ${s.status === 'finished' ? 'checked' : ''} onchange="toggleSem(this)">
+    <div class="sem-item-top">
+      <span class="sem-name">${s.num}. ${s.name}</span>
+      <span class="sem-check">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg>
+      </span>
+    </div>
+    <div class="sem-credit-wrap" onclick="event.preventDefault(); event.stopPropagation();">
+      <input type="number" class="sem-credit-input" id="credit-input-${i}"
+        value="${s.credit}" min="0.25" max="30" step="0.25"
+        title="Edit credits for this semester"
+        oninput="onSemCreditInput(this, ${i})">
+      <span class="sem-credit-label">cr</span>
+    </div>
+    <div class="sem-status ${s.status}">${s.status}</div>
+    <div class="sem-waiver-row" onclick="event.preventDefault(); event.stopPropagation();">
+      <select class="sem-waiver-select" data-idx="${i}" onchange="onSemWaiverChange(this)">
+        ${optionsHtml}
+      </select>
+      <input type="number" class="sem-custom-pct" data-idx="${i}"
+        placeholder="%" min="0" max="100" step="0.5"
+        oninput="onSemCustomPct(this)">
+      <span class="sem-waiver-badge" id="waiver-badge-${i}">0%</span>
+    </div>
+  `;
+  grid.appendChild(item);
+});
+
+updateCount();
+
+// ── GLOBAL WAIVER APPLY ──
+function applyGlobalWaiver() {
+  const globalSel = document.getElementById('waiver-global');
+  const globalCustomWrap = document.getElementById('global-custom-wrap');
+  const globalVal = globalSel.value;
+
+  globalCustomWrap.style.display = globalVal === 'custom' ? 'block' : 'none';
+
+  let pct = 0;
+  if (globalVal === 'custom') {
+    const cv = parseFloat(document.getElementById('waiver-global-custom').value);
+    pct = isNaN(cv) ? 0 : Math.min(100, Math.max(0, cv));
+  } else {
+    pct = parseFloat(globalVal) * 100;
+  }
+
+  // Apply to all semester selects
+  SEMESTERS.forEach((s, i) => {
+    const sel = document.querySelector(`.sem-waiver-select[data-idx="${i}"]`);
+    const customIn = document.querySelector(`.sem-custom-pct[data-idx="${i}"]`);
+    const badge = document.getElementById(`waiver-badge-${i}`);
+
+    if (globalVal === 'custom') {
+      sel.value = 'custom';
+      customIn.classList.add('visible');
+      customIn.value = pct || '';
+    } else {
+      sel.value = globalVal;
+      customIn.classList.remove('visible');
+      customIn.value = '';
+    }
+    badge.textContent = pct.toFixed(pct % 1 === 0 ? 0 : 1) + '%';
+  });
+}
+
+// ── PER-SEM WAIVER DROPDOWN ──
+function onSemWaiverChange(sel) {
+  const idx = sel.dataset.idx;
+  const customIn = document.querySelector(`.sem-custom-pct[data-idx="${idx}"]`);
+  const badge = document.getElementById(`waiver-badge-${idx}`);
+
+  if (sel.value === 'custom') {
+    customIn.classList.add('visible');
+    customIn.focus();
+    badge.textContent = '?%';
+  } else {
+    customIn.classList.remove('visible');
+    customIn.value = '';
+    const pct = parseFloat(sel.value) * 100;
+    badge.textContent = pct.toFixed(pct % 1 === 0 ? 0 : 1) + '%';
+  }
+}
+
+// ── PER-SEM CUSTOM PCT INPUT ──
+function onSemCustomPct(input) {
+  const idx = input.dataset.idx;
+  const badge = document.getElementById(`waiver-badge-${idx}`);
+  const val = parseFloat(input.value);
+  badge.textContent = (!isNaN(val) ? Math.min(100, Math.max(0, val)).toFixed(val % 1 === 0 ? 0 : 1) : '?') + '%';
+}
+
+// ── GET WAIVER FOR A SEMESTER ──
+function getSemWaiver(idx) {
+  const sel = document.querySelector(`.sem-waiver-select[data-idx="${idx}"]`);
+  if (!sel) return 0;
+  if (sel.value === 'custom') {
+    const cv = parseFloat(document.querySelector(`.sem-custom-pct[data-idx="${idx}"]`).value);
+    return isNaN(cv) ? 0 : Math.min(100, Math.max(0, cv)) / 100;
+  }
+  return parseFloat(sel.value) || 0;
+}
+
+// ── PER-SEM CREDIT INPUT ──
+function onSemCreditInput(input, idx) {
+  const val = parseFloat(input.value);
+  if (!isNaN(val) && val > 0) {
+    SEMESTERS[idx].credit = val;
+  }
+}
+
+// ── GET LIVE CREDITS FOR A SEMESTER ──
+function getSemCredit(idx) {
+  const el = document.getElementById(`credit-input-${idx}`);
+  if (el) {
+    const v = parseFloat(el.value);
+    if (!isNaN(v) && v > 0) return v;
+  }
+  return SEMESTERS[idx].credit;
+}
+
+function toggleSem(cb) {
+  cb.closest('.sem-item').classList.toggle('selected', cb.checked);
+  updateCount();
+}
+
+function updateCount() {
+  const n = document.querySelectorAll('.sem-item input[type="checkbox"]:checked').length;
+  document.getElementById('selected-count').textContent = n + ' selected';
+}
+
+// ── CALCULATE ──
+function fmt(n) {
+  return '৳' + Math.round(n).toLocaleString('en-IN');
+}
+
+function calculate() {
+  const checked = [...document.querySelectorAll('.sem-item input[type="checkbox"]:checked')];
+
+  if (!checked.length) {
+    alert('Please select at least one semester.');
+    return;
+  }
+
+  const selected = checked.map(cb => {
+    const semIdx = parseInt(cb.closest('.sem-item').dataset.idx);
+    return { sem: SEMESTERS[semIdx], semIdx };
+  });
+
+  let totalGross = 0, totalPayable = 0, totalSaved = 0, totalCredits = 0;
+  const rows = [];
+  const waiverLabels = new Set();
+
+  selected.forEach(({ sem: s, semIdx }) => {
+    const credits  = getSemCredit(semIdx);
+    const semFee   = s.semFeeFirst ? SEMESTER_FEE_FIRST : SEMESTER_FEE;
+    const tuition  = credits * TUITION_PER_CREDIT;
+    const gross    = tuition + semFee;
+    const waiver   = getSemWaiver(semIdx);
+    const waiverAmt = tuition * waiver;
+    const payable  = gross - waiverAmt;
+    const waiverPct = Math.round(waiver * 10000) / 100;
+
+    if (waiverPct > 0) waiverLabels.add(waiverPct + '%');
+
+    totalGross    += gross;
+    totalPayable  += payable;
+    totalSaved    += waiverAmt;
+    totalCredits  += credits;
+    rows.push({ s, credits, semFee, tuition, gross, waiverAmt, payable, waiverPct });
+  });
+
+  // Stats
+  document.getElementById('res-payable').textContent  = fmt(totalPayable);
+  document.getElementById('res-gross').textContent    = fmt(totalGross);
+  document.getElementById('res-saved').textContent    = fmt(totalSaved);
+  document.getElementById('res-credits').textContent  = totalCredits;
+  document.getElementById('res-sems-count').textContent = selected.length + ' semester' + (selected.length > 1 ? 's' : '');
+  document.getElementById('breakdown-sem-total').textContent = selected.length + ' semesters';
+
+  const waiverSummary = waiverLabels.size === 0 ? 'No Waiver Applied'
+    : waiverLabels.size === 1 ? [...waiverLabels][0] + ' Waiver Applied'
+    : 'Mixed Waivers (' + [...waiverLabels].join(', ') + ')';
+  document.getElementById('waiver-label').textContent = waiverSummary;
+
+  // Table
+  const tbody = document.getElementById('breakdown-tbody');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-sem">${r.s.num}</td>
+      <td class="td-sem">${r.s.name}</td>
+      <td class="td-credit">${r.credits}</td>
+      <td class="td-tuition">${fmt(r.tuition)}</td>
+      <td class="td-semfee">${fmt(r.semFee)}</td>
+      <td class="td-total">${fmt(r.gross)}</td>
+      <td class="td-waiver">${r.waiverPct > 0 ? '-' + fmt(r.waiverAmt) + '<br><span style="font-size:0.58rem;color:#c59fff">' + r.waiverPct + '%</span>' : '—'}</td>
+      <td class="td-payable">${fmt(r.payable)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Total row
+  const totTr = document.createElement('tr');
+  totTr.className = 'total-row';
+  const totalTuition = rows.reduce((a, r) => a + r.tuition, 0);
+  const totalSemFees = rows.reduce((a, r) => a + r.semFee, 0);
+  totTr.innerHTML = `
+    <td colspan="2">TOTAL</td>
+    <td>${totalCredits}</td>
+    <td>${fmt(totalTuition)}</td>
+    <td>${fmt(totalSemFees)}</td>
+    <td>${fmt(totalGross)}</td>
+    <td>-${fmt(totalSaved)}</td>
+    <td>${fmt(totalPayable)}</td>
+  `;
+  tbody.appendChild(totTr);
+
+  const resultsEl = document.getElementById('results');
+  resultsEl.classList.add('show');
+  setTimeout(() => resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// ── CANVAS BACKGROUND ──
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, dots = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  buildDots();
+}
+
+function buildDots() {
+  dots = [];
+  const n = Math.floor(W * H / 12000);
+  for (let i = 0; i < n; i++) {
+    dots.push({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.5
+    });
+  }
+}
+
+function drawCanvas() {
+  ctx.clearRect(0, 0, W, H);
+  dots.forEach(d => {
+    d.x += d.vx; d.y += d.vy;
+    if (d.x < 0) d.x = W; if (d.x > W) d.x = 0;
+    if (d.y < 0) d.y = H; if (d.y > H) d.y = 0;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,212,255,0.25)';
+    ctx.fill();
+  });
+
+  for (let i = 0; i < dots.length; i++) {
+    for (let j = i + 1; j < dots.length; j++) {
+      const dx = dots[i].x - dots[j].x;
+      const dy = dots[i].y - dots[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 100) {
+        ctx.beginPath();
+        ctx.moveTo(dots[i].x, dots[i].y);
+        ctx.lineTo(dots[j].x, dots[j].y);
+        ctx.strokeStyle = `rgba(0,212,255,${0.06 * (1 - dist/100)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(drawCanvas);
+}
+
+window.addEventListener('resize', resize);
+resize();
+drawCanvas();
+</script>
+</body>
+</html>
