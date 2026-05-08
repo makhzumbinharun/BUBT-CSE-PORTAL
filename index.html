@@ -272,6 +272,23 @@
     color: var(--text); font-weight: 700;
   }
 
+  /* Inline editable semester name inside card */
+  .sem-name-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed rgba(0,212,255,0.2);
+    color: var(--text);
+    font-family: var(--mono); font-size: 0.72rem;
+    font-weight: 700; outline: none;
+    width: 100%; padding: 1px 2px;
+    transition: border-color 0.2s;
+  }
+
+  .sem-name-input:focus {
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+  }
+
   .sem-check {
     width: 16px; height: 16px;
     border: 1px solid var(--border);
@@ -876,7 +893,11 @@ SEMESTERS.forEach((s, i) => {
   item.innerHTML = `
     <input type="checkbox" ${s.status === 'finished' ? 'checked' : ''} onchange="toggleSem(this)">
     <div class="sem-item-top">
-      <span class="sem-name">${s.num}. ${s.name}</span>
+      <input type="text" class="sem-name-input" id="sem-name-${i}"
+        value="${s.num}. ${s.name}"
+        title="Click to rename this semester"
+        onclick="event.preventDefault(); event.stopPropagation(); this.focus();"
+        oninput="onSemNameInput(this, ${i})">
       <span class="sem-check">
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg>
       </span>
@@ -976,6 +997,27 @@ function getSemWaiver(idx) {
   return parseFloat(sel.value) || 0;
 }
 
+// ── PER-SEM NAME INPUT ──
+function onSemNameInput(input, idx) {
+  const val = input.value.trim();
+  if (val) {
+    // Parse "XX. Name" or just store the raw string
+    const match = val.match(/^(\S+)\.\s*(.+)$/);
+    if (match) {
+      SEMESTERS[idx].num  = match[1];
+      SEMESTERS[idx].name = match[2];
+    } else {
+      SEMESTERS[idx].name = val;
+    }
+  }
+}
+
+// ── GET LIVE NAME FOR SEMESTER ──
+function getSemDisplayName(idx) {
+  const el = document.getElementById(`sem-name-${idx}`);
+  return el ? el.value : `${SEMESTERS[idx].num}. ${SEMESTERS[idx].name}`;
+}
+
 // ── PER-SEM CREDIT INPUT ──
 function onSemCreditInput(input, idx) {
   const val = parseFloat(input.value);
@@ -1042,7 +1084,7 @@ function calculate() {
     totalPayable  += payable;
     totalSaved    += waiverAmt;
     totalCredits  += credits;
-    rows.push({ s, credits, semFee, tuition, gross, waiverAmt, payable, waiverPct });
+    rows.push({ s, semIdx, credits, semFee, tuition, gross, waiverAmt, payable, waiverPct });
   });
 
   // Stats
@@ -1063,9 +1105,11 @@ function calculate() {
   tbody.innerHTML = '';
   rows.forEach(r => {
     const tr = document.createElement('tr');
+    const displayName = getSemDisplayName(r.semIdx);
+    const numPart = displayName.match(/^([^.]+)/)?.[1] ?? r.s.num;
     tr.innerHTML = `
-      <td class="td-sem">${r.s.num}</td>
-      <td class="td-sem">${r.s.name}</td>
+      <td class="td-sem">${numPart}</td>
+      <td class="td-sem">${displayName}</td>
       <td class="td-credit">${r.credits}</td>
       <td class="td-tuition">${fmt(r.tuition)}</td>
       <td class="td-semfee">${fmt(r.semFee)}</td>

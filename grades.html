@@ -519,6 +519,20 @@
   .sem-tab-wrap:hover .sem-tab-del { display: flex; }
   .sem-tab-del:hover { color: var(--error); }
 
+  /* Editable tab label */
+  .sem-tab-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed rgba(0,255,148,0.4);
+    color: var(--accent3);
+    font-family: var(--mono); font-size: 0.68rem;
+    letter-spacing: 1px; text-transform: uppercase;
+    outline: none; width: 80px; text-align: center;
+    padding: 1px 2px;
+  }
+
+  .sem-tab-input:focus { border-bottom-color: var(--accent3); background: rgba(0,255,148,0.05); }
+
   /* ── FOOTER ── */
   footer {
     position: relative; z-index: 1;
@@ -833,9 +847,25 @@ function buildTab(s) {
 
   const tab = document.createElement('div');
   tab.className = 'sem-tab' + (s.id === activeSem ? ' active' : '');
-  tab.textContent = s.label;
   tab.dataset.id = s.id;
   tab.addEventListener('click', () => switchSem(s.id));
+
+  // Editable label input inside the tab
+  const labelInput = document.createElement('input');
+  labelInput.type = 'text';
+  labelInput.className = 'sem-tab-input';
+  labelInput.value = s.label;
+  labelInput.title = 'Click to rename semester';
+  labelInput.addEventListener('click', e => e.stopPropagation()); // don't re-trigger switchSem
+  labelInput.addEventListener('focus', () => switchSem(s.id));
+  labelInput.addEventListener('input', () => {
+    s.label = labelInput.value;
+    s.name  = labelInput.value;
+    updateSemGPAList(); // refresh right panel names
+  });
+  labelInput.addEventListener('keydown', e => { if (e.key === 'Enter') labelInput.blur(); });
+
+  tab.appendChild(labelInput);
 
   const del = document.createElement('button');
   del.className = 'sem-tab-del';
